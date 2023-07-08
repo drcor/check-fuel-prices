@@ -167,12 +167,12 @@ class CheckFuelPrices:
         for i, station in enumerate(self.nearFuelStations):
             kml.newpoint(name=f'{i} - {station.price}', description=f"{station.brand} - {station.name}", coords=[(station.longitude, station.latitude)])
         
-        kml.save("fuelstations{}_[{}_{}]x{}_{}.kml".format(self.lastDatabaseUpdate.strftime("%Y%m%d"), self.latitude, self.longitude, self.searchRadiusInKm, self.fuelType))
+        kml.save("fuelstations{}_[{}_{}]x{}_{}.kml".format(datetime.now().strftime("%Y%m%d"), self.latitude, self.longitude, self.searchRadiusInKm, self.fuelType))
 
 # execute the Main class code
 if __name__ == "__main__":
     CONFIG_PATH = os.path.expanduser('~')+"/.config/check-fuel-prices.yaml"
-    DATA_PATH = os.path.expanduser('~')+"/TEMP/"
+    DATA_PATH = os.path.expanduser('~')
 
     # create cli arguments
     parser = argparse.ArgumentParser()
