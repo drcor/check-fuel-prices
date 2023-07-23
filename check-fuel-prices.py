@@ -19,7 +19,7 @@ TYPES_OF_FUEL = {
 
 class FuelStation(object):
 	# Fuel station constructor
-	def __init__(self, name, district, municipality, town, address, latitude, longitude, price, brand):
+	def __init__(self, name:str, district:str, municipality:str, town:str, address:str, latitude:float, longitude:float, price:float, brand:str):
 		self.name = name
 		self.district = district
 		self.municipality = municipality
@@ -99,7 +99,7 @@ class CheckFuelPrices:
         arcLength = self.calculateEarthArcFromRadius(self.searchRadiusInKm)
         latitudeDistance = abs(latitude - self.latitude)
         longitudeDistance = abs(longitude - self.longitude)
-        # return True if the distance between the two locations is smaller or equal to the radius
+        # return True if the distance between the two locations is smaller or equal to the radius 
         return math.sqrt(latitudeDistance**2 + longitudeDistance**2) <= arcLength
 
     # converts the name of the fuel to it's reference in database
@@ -159,10 +159,9 @@ class CheckFuelPrices:
             ))
 
         if self.createKml:
-            self.saveKMLFile()
+            self.saveToKMLFile()
 
-    # TODO: save kml file
-    def saveKMLFile(self):
+    def saveToKMLFile(self):
         kml = simplekml.Kml()
         for i, station in enumerate(self.nearFuelStations):
             kml.newpoint(name=f'{i} - {station.price}', description=f"{station.brand} - {station.name}", coords=[(station.longitude, station.latitude)])
