@@ -18,17 +18,18 @@ TYPES_OF_FUEL = {
 }
 
 class FuelStation(object):
-	# Fuel station constructor
-	def __init__(self, name:str, district:str, municipality:str, town:str, address:str, latitude:float, longitude:float, price:float, brand:str):
-		self.name = name
-		self.district = district
-		self.municipality = municipality
-		self.town = town
-		self.address = address
-		self.latitude = latitude
-		self.longitude = longitude
-		self.price = price
-		self.brand = brand
+        # Fuel station constructor
+        def __init__(self, name:str, district:str, municipality:str, town:str, address:str, latitude:float, longitude:float, price:float, brand:str):
+                self.name = name
+                self.district = district
+                self.municipality = municipality
+                self.town = town
+                self.address = address
+                self.latitude = latitude
+                self.longitude = longitude
+                self.price = price
+                self.brand = brand
+
 
 class CheckFuelPrices:
     def __init__(self, configPath:str, urlFormat:str, databasePath:str):
@@ -42,18 +43,21 @@ class CheckFuelPrices:
         self.createKml = configOptions['create_kml']
         self.searchRadiusInKm = configOptions['search_radius']
 
-        self.url = urlFormat.format(self.fuelType)
-        self.databaseFile = os.path.join(databasePath, "fuel_prices_{}.json".format(self.fuelType))
-        
-        if self.isTimeToUpdateDatabase():
-            self.updateDatabase()
-            self.lastDatabaseUpdate = datetime.now()
+        self.baseUrl = urlFormat
+        self.databasePath = databasePath
+
+    # converts the name of the fuel to it's reference in database
+    def convertFuelNameToRef(self, fuelName:str) -> int:
+        if fuelName in TYPES_OF_FUEL.keys():
+            return TYPES_OF_FUEL[fuelName]
         else:
-            self.lastDatabaseUpdate = datetime.fromtimestamp(os.path.getmtime(self.databaseFile))
+            return self.fuelType
 
-
+    # update fuel type, database and url correspondents to the fuel type
     def setFuelType(self, fuelName:str):
         self.fuelType = self.convertFuelNameToRef(fuelName)
+        self.databaseFile = os.path.join(self.databasePath, "fuel_prices_{}.json".format(self.fuelType))
+        self.url = self.baseUrl.format(self.fuelType)
 
     def setLatitude(self, latitude:float):
         if latitude and -90.0 <= latitude <= 90.0:
@@ -101,13 +105,6 @@ class CheckFuelPrices:
         longitudeDistance = abs(longitude - self.longitude)
         # return True if the distance between the two locations is smaller or equal to the radius 
         return math.sqrt(latitudeDistance**2 + longitudeDistance**2) <= arcLength
-
-    # converts the name of the fuel to it's reference in database
-    def convertFuelNameToRef(self, fuelName:str) -> int:
-        if fuelName in TYPES_OF_FUEL.keys():
-            return TYPES_OF_FUEL[fuelName]
-        else:
-            return self.fuelType
     
     # Calculate the arc of earth equivalent to the radius of search
     def calculateEarthArcFromRadius(self, radius:float) -> float:
@@ -115,6 +112,14 @@ class CheckFuelPrices:
         return (radius * 180) / (math.pi * earthRadius)
     
     def searchDatabase(self):
+        # Check if the database exists and is updated
+        if self.isTimeToUpdateDatabase():
+            self.updateDatabase()
+            self.lastDatabaseUpdate = datetime.now()
+        else:
+            self.lastDatabaseUpdate = datetime.fromtimestamp(os.path.getmtime(self.databaseFile))
+
+        # Search for stations in the radius
         self.nearFuelStations = []
         stationsDatabase = None
         # read database
@@ -207,4 +212,3 @@ if __name__ == "__main__":
 
     checkFuelPrices.searchDatabase()
     checkFuelPrices.showResults()
-    
