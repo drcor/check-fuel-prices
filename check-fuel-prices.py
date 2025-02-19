@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# author: drcor
+#!/usr/bin/python3
+# Author: Diogo Correia
 
 import requests
 import json
@@ -10,6 +10,7 @@ import math
 import argparse
 import yaml
 
+# Constants
 URL = "https://precoscombustiveis.dgeg.gov.pt/api/PrecoComb/PesquisarPostos?idsTiposComb={}&idMarca=&idTipoPosto=&idDistrito=&idsMunicipios=&qtdPorPagina=5000&pagina=1"
 TYPES_OF_FUEL = {
     "95": 3201,
@@ -17,6 +18,7 @@ TYPES_OF_FUEL = {
     "diesel": 2101
 }
 
+# FuelStation object
 class FuelStation(object):
 	# Fuel station constructor
 	def __init__(self, name:str, district:str, municipality:str, town:str, address:str, latitude:float, longitude:float, price:float, brand:str):
@@ -30,19 +32,22 @@ class FuelStation(object):
 		self.price = price
 		self.brand = brand
 
+# Main class
 class CheckFuelPrices:
     def __init__(self, configPath:str, urlFormat:str, databasePath:str):
         # parse default configurations from the config file
         with open(configPath, 'r') as configfile:
             configOptions = yaml.safe_load(configfile)
         # import default configurations
-        self.latitude = configOptions['latitude']
-        self.longitude = configOptions['longitude']
+        self.latitude = configOptions['latitude'] if 'latitude' in configOptions.keys() else 0.0
+        self.longitude = configOptions['longitude'] if 'longitude' in configOptions.keys() else 0.0
+
         self.fuelType = self.convertFuelNameToRef(configOptions['fuel'])
-        self.createKml = configOptions['create_kml']
-        self.searchRadiusInKm = configOptions['search_radius']
+        self.createKml = configOptions['create_kml'] if 'create_kml' in configOptions.keys() else False
+        self.searchRadiusInKm = configOptions['search_radius'] if 'search_radius' in configOptions.keys() else 0
 
         self.url = urlFormat.format(self.fuelType)
+        self.databasePath = databasePath
         self.databaseFile = os.path.join(databasePath, "fuel_prices_{}.json".format(self.fuelType))
         
         if self.isTimeToUpdateDatabase():
@@ -138,21 +143,22 @@ class CheckFuelPrices:
             self.nearFuelStations = sorted(self.nearFuelStations, key=lambda fuelStation: fuelStation.price)
 
     def showResults(self):
-        print(f"Data from: {self.lastDatabaseUpdate.strftime('%d/%m/%Y')}")
+        #print(f"Data from: {self.lastDatabaseUpdate.strftime('%d/%m/%Y')}")
         
         if self.nearFuelStations == []:
-            print("\n!Não existem bombas de combustível nesse raio!")
+            print("\n!Não existem bombas de combustível nessa zona!\nExperimente alterar as configurações...")
             exit()
 
         # Show the fuel stations list on monitor
-        row_format ="{:>2} | {:<16} {:<40} {:<9} {:<15} {:<25}"
+        #row_format = "{:>2} | {:<16} {:<45} {:<9} {:<15} {:<25}"
+        row_format = "{:>2} {:<16} {:<45} {:<9} {:<15} {:<25}"
         print(row_format.format("Nº", "Marca", "Nome", "Preco", "Municipio", "Localizacao"))
-        print("-" * len(row_format.format("", "", "", "", "", "")))
+        #print("-" * len(row_format.format("", "", "", "", "", "")))
         for i, station in enumerate(self.nearFuelStations, start=1):
             print(row_format.format(
                 i, 
                 station.brand, 
-                station.name, 
+                (station.name[:42] + '...') if len(station.name) > 45 else station.name, # truncate names longer than 45 chars
                 str(station.price) + " €", 
                 station.municipality, 
                 "{}, {}".format(station.latitude, station.longitude)
@@ -166,12 +172,19 @@ class CheckFuelPrices:
         for i, station in enumerate(self.nearFuelStations):
             kml.newpoint(name=f'{i} - {station.price}', description=f"{station.brand} - {station.name}", coords=[(station.longitude, station.latitude)])
         
-        kml.save("fuelstations{}_[{}_{}]x{}_{}.kml".format(datetime.now().strftime("%Y%m%d"), self.latitude, self.longitude, self.searchRadiusInKm, self.fuelType))
+        kmlpath = os.path.join(self.databasePath, 
+                              "fuelstations{}_[{}_{}]x{}_{}.kml".format(datetime.now().strftime("%Y%m%d"), self.latitude, self.longitude, self.searchRadiusInKm, self.fuelType)
+                              )
+        kml.save(kmlpath)
+        print("\nKML saved to '{}'".format(kmlpath))
 
 # execute the Main class code
 if __name__ == "__main__":
-    CONFIG_PATH = os.path.expanduser('~')+"/.config/check-fuel-prices.yaml"
-    DATA_PATH = os.path.expanduser('~')
+    from pathlib import Path
+    import tempfile
+
+    DATA_PATH = tempfile.gettempdir()
+    CONFIG_PATH = Path.home().joinpath( '.config', 'check-fuel-prices.yaml' )
 
     # create cli arguments
     parser = argparse.ArgumentParser()

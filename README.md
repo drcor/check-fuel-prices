@@ -15,7 +15,8 @@ Then create the file `~/.config/check-fuel-prices.yaml` and insert the following
 ```yaml
 # Configuration file for check-fuel-prices.py
 # With the default options
-location: [0.0000, 0.0000] # [latitude, longitude]
+latitude: 0.0000 # latitude
+longitude: 0.0000 # longitude
 fuel: "95" # 95, 98, diesel
 create_kml: false
 search_radius: 8 # kilometers
